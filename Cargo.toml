@@ -2,6 +2,7 @@
 name = "base4"
 authors = ["Syed-Anees <syedanees816@gmail.com>"]
 description = "A portable base4 bit packing codec implementation."
+repository = "https://github.com/SyedAnees21/Base4"
 version = "0.1.0"
 edition = "2024"
 publish = true
