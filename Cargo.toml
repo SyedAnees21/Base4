@@ -8,7 +8,7 @@ publish = true
 rust-version = "1.85.0"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-categories = ["Encoding", "multimedia::encoding"]
+categories = ["encoding", "compression", "multimedia::encoding"]
 keywords = ["Base4", "Codec", "Decoding", "Encoding"]
 
 [dev-dependencies]
