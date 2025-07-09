@@ -78,7 +78,7 @@ impl Base4Int {
     /// Pops all the elements stored inside each base4 block in
     /// first-in-first-out order preserving the original ordering
     /// in whicch all elements were inserted.
-    /// 
+    ///
     /// This may return an empty vector if no elements are there.
     pub fn pop_all<T>(&mut self) -> Vec<T>
     where
@@ -113,20 +113,20 @@ impl Base4Int {
     /// Peeks at a specific element by index according to the
     /// original list from which the element were inseted without
     /// popping the value out of `Base4Int`.
-    /// 
+    ///
     /// # Example
     /// ```
     /// use base4::Base4Int;
     ///
     /// let mut big_int = Base4Int::new();
     /// big_int.push_all(&[0_u64, 1, 2, 3, 2, 1, 0]);
-    /// 
+    ///
     /// assert!(2 == big_int.peek_at(2));
     /// assert!(0 == big_int.peek_at(6));
     /// ```
     /// # Panics
-    /// 
-    /// This method may panic if the porvided index is out of 
+    ///
+    /// This method may panic if the porvided index is out of
     /// bounds according to the original slice.
     pub fn peek_at<T>(&self, index: usize) -> T
     where
@@ -147,7 +147,7 @@ impl Base4Int {
 
     /// Returns the list of all the elements packed inside the
     /// `Base4Int` without popping.
-    /// 
+    ///
     /// List will be received in the original order in which it
     /// was packed.
     pub fn peek_all<T>(&self) -> Vec<T>
@@ -180,51 +180,156 @@ impl Index<usize> for Base4Int {
     }
 }
 
+/// Core base4 codec, which can pack upto maximum 64 elements
+/// into a single 128-bit integer.
+///
+/// This acts as a core block-encoder behind [Base4Int] type.
+///
+/// # Example
+/// ```
+/// use base4::Base4;
+///
+/// let mut codec = Base4::new();
+/// codec.push_all(&[1_u8,2,3,0,1]);
+/// ```
+///
+/// Base4 and Base4Int shares the similar API patterns, the only
+/// difference between these two types is that Base4 can never pack
+/// slices larger than 64 elements. So if you want to store recursively
+/// large arrays of base4, then use [Base4Int].
 #[derive(Debug)]
 pub struct Base4 {
+    /// Keeps the current size of block in terms of
+    /// number of elements.
     size: usize,
-    encoded: u128,
+
+    /// Buffer to contain packed elements.
+    packed: u128,
 }
 
 impl Base4 {
+    /// Creates a new instance of [Base4] block with default
+    /// size and container.
     pub fn new() -> Self {
-        Base4 {
-            size: 0,
-            encoded: 0,
+        Base4 { size: 0, packed: 0 }
+    }
+
+    /// Packs a single element at the back. This may fail if
+    /// the integer is not within base4 bounds.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use base4::Base4;
+    ///
+    /// let mut codec = Base4::new();
+    ///
+    /// assert!(codec.push(1u8));
+    /// assert!(!codec.push(4u8));
+    /// ```
+    /// Returns `true` if the element is inserted else false.
+    pub fn push<T>(&mut self, integer: T) -> bool
+    where
+        T: Into<u128> + Copy,
+    {
+        if integer.into() >= 4 || self.size == 64 {
+            return false;
         }
-    }
-
-    pub fn push<T>(&mut self, integer: T)
-    where
-        T: Into<u128> + Copy,
-    {
-        assert!(
-            integer.into() < 4,
-            "Base4 only accepts value bounded within 0..=3"
-        );
         self.size += 1;
-        self.encoded = (self.encoded << 2) | integer.into();
+        self.packed = (self.packed << 2) | integer.into();
+
+        true
     }
 
-    pub fn push_all<T>(&mut self, ints: &[T])
+    /// Packs a slice of integers.
+    ///
+    /// This may fail if the slice is larger than 64 or if any
+    /// integer in the slice is greater than the base4 bounds.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use base4::Base4;
+    ///
+    /// let mut codec = Base4::new();
+    ///
+    /// let integers = vec![3_u8;64];
+    ///
+    /// assert!(codec.push_all(&integers));
+    /// assert!(!codec.push(4_u8));
+    /// assert!(!codec.push(2_u8));
+    /// ```
+    /// Returns `true` if it packs every element of slice.
+    pub fn push_all<T>(&mut self, ints: &[T]) -> bool
     where
         T: Into<u128> + Copy,
     {
-        ints.iter().for_each(|integer| self.push(*integer));
+        if ints.len() > 64 {
+            return false;
+        }
+
+        for integer in ints {
+            if !self.push(*integer) {
+                self.size = 0;
+                self.packed = 0;
+
+                return false;
+            }
+        }
+        true
     }
 
+    /// Pops the last element out.
+    /// 
+    /// # Example
+    ///
+    /// ```rust
+    /// use base4::Base4;
+    ///
+    /// let mut codec = Base4::new();
+    ///
+    /// let integers: Vec<u32> = vec![0, 1, 2, 3];
+    ///
+    /// assert!(codec.push_all(&integers));
+    /// assert!(codec.pop() == Some(3));
+    /// assert!(codec.pop() == Some(2));
+    /// assert!(codec.pop() == Some(1));
+    /// assert!(codec.pop() == Some(0));
+    /// assert!(codec.pop() == None);
+    /// ```
+    /// Returns none if the block is already empty.
     pub fn pop(&mut self) -> Option<u8> {
         if self.size <= 0 {
             return None;
         }
 
-        let int = self.encoded & 0b11;
-        self.encoded >>= 2;
+        let int = self.packed & 0b11;
+        self.packed >>= 2;
         self.size -= 1;
 
         Some(int as u8)
     }
 
+    /// Pops all the elements out, leaving the block empty
+    /// as in default state.
+    /// 
+    /// Elements are received in vector in the original order
+    /// as they were inserted.
+    /// 
+    /// # Example
+    /// 
+    /// ```rust
+    /// use base4::Base4;
+    ///
+    /// let mut codec = Base4::new();
+    ///
+    /// let integers: Vec<u32> = vec![0, 1, 2, 3];
+    /// codec.push_all(&integers);
+    /// 
+    /// assert!(codec.pop_all::<u32>() == integers);
+    /// ```
+    /// 
+    /// An empty codec returns empty `Vec` 
     pub fn pop_all<T>(&mut self) -> Vec<T>
     where
         T: From<u8> + Copy,
@@ -241,6 +346,26 @@ impl Base4 {
         ints
     }
 
+    /// Peeks at a specific element by index according to the
+    /// original list from which the element were inserted without
+    /// popping the value out of `Base4` buffer.
+    ///
+    /// # Example
+    /// ```
+    /// use base4::Base4;
+    ///
+    /// let mut codec = Base4::new();
+    /// let integers: Vec<u32> = vec![0, 1, 2, 3, 2, 1, 0]; 
+    /// 
+    /// codec.push_all(&integers);
+    ///
+    /// assert!(2 == codec.peek_at(2));
+    /// assert!(0 == codec.peek_at(6));
+    /// ```
+    /// # Panics
+    ///
+    /// This method may panic if the porvided index is out of
+    /// bounds according to the original slice.
     pub fn peek_at<T>(&self, index: usize) -> T
     where
         T: From<u8> + Copy,
@@ -253,9 +378,30 @@ impl Base4 {
         );
 
         let shift_pos = 2 * (self.size - index - 1);
-        T::from(((self.encoded >> shift_pos) & 0b11) as u8)
+        T::from(((self.packed >> shift_pos) & 0b11) as u8)
     }
 
+    /// Returns the list of all the elements packed inside the
+    /// [Base4] without popping.
+    ///
+    /// List will be received in the original order in which it
+    /// was packed.
+    /// 
+    /// # Example
+    /// 
+    /// ```rust
+    /// use base4::Base4;
+    ///
+    /// let mut codec = Base4::new();
+    /// let integers: Vec<u32> = vec![0, 1, 2, 3]; 
+    /// 
+    /// codec.push_all(&integers);
+    /// 
+    /// assert!(codec.peek_all::<u32>() == integers);
+    /// 
+    /// // Codec still holds the elements
+    /// assert!(codec.peek_at::<u32>(3) == 3);
+    /// ```
     pub fn peek_all<T>(&self) -> Vec<T>
     where
         T: From<u8> + Copy,
