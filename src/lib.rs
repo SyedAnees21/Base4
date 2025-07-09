@@ -18,6 +18,12 @@ type Base4Blocks = VecDeque<Base4>;
 #[derive(Debug)]
 pub struct Base4Int(Base4Blocks);
 
+impl Default for Base4Int {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Base4Int {
     /// Creates a new empty instance of `Base4Int` type.
     pub fn new() -> Self {
@@ -207,6 +213,12 @@ pub struct Base4 {
     packed: u128,
 }
 
+impl Default for Base4 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Base4 {
     /// Creates a new instance of [Base4] block with default
     /// size and container.
@@ -280,7 +292,7 @@ impl Base4 {
     }
 
     /// Pops the last element out.
-    /// 
+    ///
     /// # Example
     ///
     /// ```rust
@@ -312,12 +324,12 @@ impl Base4 {
 
     /// Pops all the elements out, leaving the block empty
     /// as in default state.
-    /// 
+    ///
     /// Elements are received in vector in the original order
     /// as they were inserted.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use base4::Base4;
     ///
@@ -325,11 +337,11 @@ impl Base4 {
     ///
     /// let integers: Vec<u32> = vec![0, 1, 2, 3];
     /// codec.push_all(&integers);
-    /// 
+    ///
     /// assert!(codec.pop_all::<u32>() == integers);
     /// ```
-    /// 
-    /// An empty codec returns empty `Vec` 
+    ///
+    /// An empty codec returns empty `Vec`
     pub fn pop_all<T>(&mut self) -> Vec<T>
     where
         T: From<u8> + Copy,
@@ -355,8 +367,8 @@ impl Base4 {
     /// use base4::Base4;
     ///
     /// let mut codec = Base4::new();
-    /// let integers: Vec<u32> = vec![0, 1, 2, 3, 2, 1, 0]; 
-    /// 
+    /// let integers: Vec<u32> = vec![0, 1, 2, 3, 2, 1, 0];
+    ///
     /// codec.push_all(&integers);
     ///
     /// assert!(2 == codec.peek_at(2));
@@ -386,19 +398,19 @@ impl Base4 {
     ///
     /// List will be received in the original order in which it
     /// was packed.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```rust
     /// use base4::Base4;
     ///
     /// let mut codec = Base4::new();
-    /// let integers: Vec<u32> = vec![0, 1, 2, 3]; 
-    /// 
+    /// let integers: Vec<u32> = vec![0, 1, 2, 3];
+    ///
     /// codec.push_all(&integers);
-    /// 
+    ///
     /// assert!(codec.peek_all::<u32>() == integers);
-    /// 
+    ///
     /// // Codec still holds the elements
     /// assert!(codec.peek_at::<u32>(3) == 3);
     /// ```

@@ -1,7 +1,15 @@
 [package]
 name = "base4"
+authors = ["Syed-Anees <syedanees816@gmail.com>"]
+description = "A portable base4 bit packing codec implementation."
 version = "0.1.0"
 edition = "2024"
+publish = true
+rust-version = "1.85.0"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+categories = ["Encoding", "multimedia::encoding"]
+keywords = ["Base4", "Codec", "Decoding", "Encoding"]
 
 [dev-dependencies]
 rand = "0.9.1"
