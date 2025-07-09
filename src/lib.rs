@@ -30,7 +30,7 @@ impl Base4Int {
         codec.push(integer);
     }
 
-    pub fn pop(&mut self) -> u8 {
+    pub fn pop(&mut self) -> Option<u8> {
         let (out, empty) = match self.0.back_mut() {
             Some(codec) => {
                 let out = codec.pop();
@@ -148,25 +148,31 @@ impl Base4 {
         ints.iter().for_each(|integer| self.push(*integer));
     }
 
-    pub fn pop(&mut self) -> u8 {
-        assert!(self.size > 0, "Attempted to pop an empty Base codec");
+    pub fn pop(&mut self) -> Option<u8> {
+        if self.size <= 0 {
+            return None;
+        }
 
         let int = self.encoded & 0b11;
         self.encoded >>= 2;
         self.size -= 1;
 
-        int as u8
+        Some(int as u8)
     }
 
     pub fn pop_all<T>(&mut self) -> Vec<T>
     where
         T: From<u8> + Copy,
     {
+        if self.size <= 0 {
+            return vec![];
+        }
+
         let mut ints = Vec::with_capacity(self.size);
-        (0..self.size).for_each(|_| ints.push(T::from(self.pop())));
-
+        while let Some(value) = self.pop() {
+            ints.push(T::from(value));
+        }
         ints.reverse();
-
         ints
     }
 

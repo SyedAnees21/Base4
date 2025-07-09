@@ -23,13 +23,13 @@ fn base4_int_smoke() {
 
     println!("{:?}", base4_integer);
 
-    assert!(0 == base4_integer.pop() as u64);
-    assert!(1 == base4_integer.pop() as u64);
-    assert!(2 == base4_integer.pop() as u64);
-    assert!(3 == base4_integer.pop() as u64);
-    assert!(2 == base4_integer.pop() as u64);
-    assert!(1 == base4_integer.pop() as u64);
-    assert!(0 == base4_integer.pop() as u64);
+    assert!(Some(0) == base4_integer.pop());
+    assert!(Some(1) == base4_integer.pop());
+    assert!(Some(2) == base4_integer.pop());
+    assert!(Some(3) == base4_integer.pop());
+    assert!(Some(2) == base4_integer.pop());
+    assert!(Some(1) == base4_integer.pop());
+    assert!(Some(0) == base4_integer.pop());
 
     base4_integer.push_all(&[0_u64, 1, 2, 3, 2, 1, 0]);
 
@@ -77,7 +77,7 @@ fn push_pop_base4_int() {
     assert!(base4_integer.total_blocks() == 3);
     assert!(base4_integer.total_len() == 129);
     assert!(base4_integer.peek_at::<u64>(128) == 2);
-    assert!(base4_integer.pop() == 2);
+    assert!(base4_integer.pop() == Some(2));
     assert!(base4_integer.total_blocks() == 2);
     assert!(base4_integer.total_len() == 128);
 }
@@ -90,13 +90,13 @@ fn base4_codec() {
 
     println!("{:?}", base4_integer);
 
-    assert!(0 == base4_integer.pop() as u64);
-    assert!(1 == base4_integer.pop() as u64);
-    assert!(2 == base4_integer.pop() as u64);
-    assert!(3 == base4_integer.pop() as u64);
-    assert!(2 == base4_integer.pop() as u64);
-    assert!(1 == base4_integer.pop() as u64);
-    assert!(0 == base4_integer.pop() as u64);
+    assert!(Some(0) == base4_integer.pop());
+    assert!(Some(1) == base4_integer.pop());
+    assert!(Some(2) == base4_integer.pop());
+    assert!(Some(3) == base4_integer.pop());
+    assert!(Some(2) == base4_integer.pop());
+    assert!(Some(1) == base4_integer.pop());
+    assert!(Some(0) == base4_integer.pop());
 
     base4_integer.push_all(&[0_u64, 1, 2, 3, 2, 1, 0]);
 
@@ -232,10 +232,10 @@ fn base4_encode(ints: &[usize]) -> u128 {
 
 fn base4_decode(n: u128, size: usize) -> Vec<u64> {
     let mut ints = Vec::with_capacity(size);
-    let mut N = n;
+    let mut n = n;
     for _ in 0..size {
-        ints.push((N % 4) as u64);
-        N /= 4;
+        ints.push((n % 4) as u64);
+        n /= 4;
     }
     ints
 }
